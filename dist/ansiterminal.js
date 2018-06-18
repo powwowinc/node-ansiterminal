@@ -1411,8 +1411,7 @@
      * @method module:node-ansiterminal.AnsiTerminal#inst_p
      */
     AnsiTerminal.prototype.inst_p = function(s) {
-        if (this.debug)
-            console.log('inst_p', s);
+        this.log('inst_p', s);
         var c = '',
             code = 0,
             low = 0,
@@ -1545,15 +1544,14 @@
      * @method module:node-ansiterminal.AnsiTerminal#inst_o
      */
     AnsiTerminal.prototype.inst_o = function(s) {
-        if (this.debug)
-            console.log('inst_o', s);
+        this.log('inst_o', s);
         this.last_char = '';
         this._rem_c = '';
         this.wrap = false;
         if (s.charAt(0) == '0')
             this.title = s.slice(2);
         else
-            console.log('inst_o unhandled:', s);
+            this.log('inst_o unhandled:', s);
     };
 
     /**
@@ -1563,7 +1561,7 @@
      */
     AnsiTerminal.prototype.inst_x = function (flag) {
         if (this.debug)
-            console.log('inst_x', flag.charCodeAt(0), flag);
+            this.log('inst_x', flag.charCodeAt(0), flag);
         this.last_char = '';
         this._rem_c = '';
         this.wrap = false;
@@ -1584,6 +1582,7 @@
                 this.cursor.col = 0;
                 break;
             case '\t':    this.CHT([0]); break;
+            case '\x00':  break;    // NUL
             case '\x07':  this.beep(); break;
             case '\x08':
                 if (this.cursor.col >= this.cols)
@@ -1602,12 +1601,12 @@
                 this.charset = this.G0;
                 this.active_charset = 0;
                 break;
-            case '\x11':  console.log('unhandled DC1 (XON)'); break;  // TODO
+            case '\x11':  this.log('unhandled DC1 (XON)'); break;  // TODO
             case '\x12':  break;  // DC2
-            case '\x13':  console.log('unhandled DC3 (XOFF)'); break; // TODO
+            case '\x13':  this.log('unhandled DC3 (XOFF)'); break; // TODO
             case '\x14':  break;  // DC4
             default:
-                console.log('inst_x unhandled:', flag.charCodeAt(0));
+                this.log('inst_x unhandled:', flag.charCodeAt(0));
         }
     };
 
@@ -1619,8 +1618,7 @@
      * @method module:node-ansiterminal.AnsiTerminal#inst_c
      */
     AnsiTerminal.prototype.inst_c = function(collected, params, flag) {
-        if (this.debug)
-            console.log('inst_c', collected, params, flag);
+        this.log('inst_c', collected, params, flag);
         if (flag != 'b')        // hack for getting REP working
             this.last_char = '';
         if (flag !== 'S' && flag !== 'T') { // FIXME: all but SD/SU reset wrap -> bug in xterm?
@@ -1654,7 +1652,7 @@
                     case 'b':  return this.REP(params);
                     case 'e':  return this.VPR(params);
                     case 'd':  return this.VPA(params);
-                    case 'c':  return this.send(TERM_STRING['CSI'] + '?64;1;2;6;9;15;18;21;22c');  // DA1 TODO: DA1 function
+                    case 'c':  return this.send(TERM_STRING['CSI'] + '?62c');  // DA1 TODO: DA1 function
                     case 'h':  return this.high(collected, params);
                     case 'l':  return this.low(collected, params);
                     case 'm':  return this.SGR(params);
@@ -1664,7 +1662,7 @@
                     case 'u':  return this.DECRC();
                     case '`':  return this.HPA(params);
                     default :
-                        console.log('inst_c unhandled:', collected, params, flag);
+                        this.log('inst_c unhandled:', collected, params, flag);
                 }
                 break;
             case '?':
@@ -1675,25 +1673,25 @@
                     case 'l':  return this.low(collected, params);
                     case 'n':  return this.DSR(collected, params);
                     default :
-                        console.log('inst_c unhandled:', collected, params, flag);
+                        this.log('inst_c unhandled:', collected, params, flag);
                 }
                 break;
             case '>':
                 switch (flag) {
                     case 'c':  return this.send(TERM_STRING['CSI'] + '>41;1;0c');  // DA2
                     default :
-                        console.log('inst_c unhandled:', collected, params, flag);
+                        this.log('inst_c unhandled:', collected, params, flag);
                 }
                 break;
             case '!':
                 switch (flag) {
                     case 'p':  return this.DECSTR();
                     default :
-                        console.log('inst_c unhandled:', collected, params, flag);
+                        this.log('inst_c unhandled:', collected, params, flag);
                 }
                 break;
             default :
-                console.log('inst_c unhandled:', collected, params, flag);
+                this.log('inst_c unhandled:', collected, params, flag);
         }
     };
 
@@ -1704,8 +1702,7 @@
      * @method module:node-ansiterminal.AnsiTerminal#inst_e
      */
     AnsiTerminal.prototype.inst_e = function(collected, flag) {
-        if (this.debug)
-            console.log('inst_e', collected, flag);
+        this.log('inst_e', collected, flag);
         this.last_char = '';
         this._rem_c = '';
         this.wrap = false;
@@ -1742,7 +1739,7 @@
                 //case '|':  // Invoke the G3 Character Set as GR (LS3R). - not supported
                 //case '}':  // Invoke the G2 Character Set as GR (LS2R). - not supported
                 //case '~':  // Invoke the G1 Character Set as GR (LS1R). - not supported
-                default :  console.log('inst_e unhandled:', collected, flag);
+                default :  this.log('inst_e unhandled:', collected, flag);
             }
         } else if (collected == ' ') {
             switch (flag) {
@@ -1751,7 +1748,7 @@
                 //case 'L':  // (SP) Set ANSI conformance level 1 (dpANS X3.134.1) - not supported
                 //case 'M':  // (SP) Set ANSI conformance level 2 (dpANS X3.134.1) - not supported
                 //case 'N':  // (SP) Set ANSI conformance level 3 (dpANS X3.134.1) - not supported
-                default :  console.log('inst_e unhandled:', collected, flag);
+                default :  this.log('inst_e unhandled:', collected, flag);
             }
         } else if (collected == '#') {
             switch (flag) {
@@ -1760,7 +1757,7 @@
                 case '5':  return this.DECSWL();  // (#) DEC single-width line (DECSWL)
                 case '6':  return this.DECDWL();  // (#) DEC double-width line (DECDWL)
                 case '8':  return this.DECALN();  // (#) DEC Screen Alignment Test (DECALN)
-                default :  console.log('inst_e unhandled:', collected, flag);
+                default :  this.log('inst_e unhandled:', collected, flag);
             }
         } else if (collected == '%') {
             switch (flag) {
@@ -1789,7 +1786,7 @@
             if (this.active_charset == 1)
                 this.charset = this.G1;
         } else {
-            console.log('inst_e unhandled:', collected, flag);
+            this.log('inst_e unhandled:', collected, flag);
         }
     };
 
@@ -2232,25 +2229,25 @@
                     if (!collected)                                 // IRM
                         this.insert_mode = true;
                     else
-                        console.log('unhandled high', collected, params[i]);  // DECSCLM??
+                        this.log('unhandled high', collected, params[i]);  // DECSCLM??
                     break;
                 case    7:
                     if (collected == '?')
                         this.autowrap = true;                       // DECAWM (should be default?)
                     else
-                        console.log('unhandled high', collected, params[i]);
+                        this.log('unhandled high', collected, params[i]);
                     break;
                 case   12:
                     if (collected == '?')
                         this.blinking_cursor = true;
                     else
-                        console.log('unhandled high', collected, params[i]);
+                        this.log('unhandled high', collected, params[i]);
                     break;
                 case   20:
                     if (!collected)
                         this.newline_mode = true;                   // LNM
                     else
-                        console.log('unhandled high', collected, params[i]);
+                        this.log('unhandled high', collected, params[i]);
                     break;
                 case   25:  this.show_cursor = true; break;         // DECTCEM (default)
                 case   43:  // printer stuff not supported
@@ -2292,7 +2289,7 @@
                     this.cursor = this.alternate_cursor;
                     break;
                 default:
-                    console.log('unhandled high', collected, params[i]);
+                    this.log('unhandled high', collected, params[i]);
             }
         }
     };
@@ -2306,25 +2303,25 @@
                     if (!collected)                                  // IRM (default)
                         this.insert_mode = false;
                     else
-                        console.log('unhandled low', collected, params[i]);
+                        this.log('unhandled low', collected, params[i]);
                     break;
                 case    7:
                     if (collected == '?')
                         this.autowrap = false;                       // DECAWM (default)
                     else
-                        console.log('unhandled high', collected, params[i]);
+                        this.log('unhandled high', collected, params[i]);
                     break;
                 case   12:
                     if (collected == '?')
                         this.blinking_cursor = false;
                     else
-                        console.log('unhandled high', collected, params[i]);
+                        this.log('unhandled high', collected, params[i]);
                     break;
                 case   20:
                     if (!collected)
                         this.newline_mode = false;                   // LNM (default)
                     else
-                        console.log('unhandled high', collected, params[i]);
+                        this.log('unhandled high', collected, params[i]);
                     break;
                 case   25:  this.show_cursor = false; break;         // DECTCEM
                 case   43:  // printer stuff not supported
@@ -2353,7 +2350,7 @@
                     this.cursor = this.normal_cursor;
                     break;
                 default:
-                    console.log('unhandled low', collected, params[i]);
+                    this.log('unhandled low', collected, params[i]);
             }
         }
     };
@@ -2373,7 +2370,7 @@
                 this.send(TERM_STRING['CSI'] + '?70n');
                 break;
             default:
-                console.log('unhandled DSR', collected, params);
+                this.log('unhandled DSR', collected, params);
         }
     };
 
@@ -2587,7 +2584,7 @@
                             break;
                         default:
                             // unkown mode identifier, breaks ext_color mode
-                            console.log('sgr unknown extended color mode:', ext_colors[1]);
+                            this.log('sgr unknown extended color mode:', ext_colors[1]);
                             ext_colors = 0;
                     }
                     continue;
@@ -2712,7 +2709,7 @@
                     attr = (attr & -33554688) | 16777216 | params[i]%10|8;
                     break;
                 default:
-                    console.log('sgr unknown:', params[i]);
+                    this.log('sgr unknown:', params[i]);
             }
         }
         
@@ -2729,6 +2726,13 @@
         this.textattributes = attr;
         this.colors = colors;
     };
+
+    /** Log requests */
+    AnsiTerminal.prototype.log = function () {
+        if (this.debug) {
+            console.log.apply(this, arguments);
+        }
+    }
 
     /**
      * default DCS handler
